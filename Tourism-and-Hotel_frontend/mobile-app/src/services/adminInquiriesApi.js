@@ -3,6 +3,7 @@ import { isAxiosError } from 'axios';
 import { apiClient } from '../api/client';
 import { API_BASE_URL } from '../config/env';
 import { createAuthConfig } from '../utils/api';
+import { normalizeInquiry } from './inquiriesApi';
 
 function buildApiError(error, fallbackMessage) {
   if (isAxiosError(error)) {
@@ -20,55 +21,81 @@ function buildApiError(error, fallbackMessage) {
   return error instanceof Error ? error : new Error(fallbackMessage);
 }
 
-function normalizeInquiry(rawInquiry) {
-  const id = rawInquiry?.id ?? rawInquiry?._id ?? '';
-  const isResolved = Boolean(rawInquiry?.isResolved);
-  const dateValue = rawInquiry?.date || rawInquiry?.createdAt || null;
-  const date = dateValue ? new Date(dateValue) : null;
-
-  return {
-    id: `${id}`,
-    inquiryId: `INQ-${id}`,
-    fullName: rawInquiry?.fullName || 'Guest Inquiry',
-    email: rawInquiry?.email || 'No email provided',
-    phone: rawInquiry?.phone || 'No phone provided',
-    subject: rawInquiry?.subject || 'General Inquiry',
-    message: rawInquiry?.message || 'No message provided.',
-    response: rawInquiry?.response || '',
-    isResolved,
-    statusLabel: isResolved ? 'Resolved' : 'Open',
-    createdAt: date,
-    createdLabel: date
-      ? `${date.toLocaleDateString('en-LK')} ${date.toLocaleTimeString('en-LK', {
-          hour: '2-digit',
-          minute: '2-digit',
-        })}`
-      : 'Date unavailable',
-  };
-}
-
 export async function fetchAdminInquiries(token) {
   try {
-    const response = await apiClient.get('/inquiries', createAuthConfig(token));
+    const response = await apiClient.get('/admin/inquiries', createAuthConfig(token));
     const inquiries = Array.isArray(response.data) ? response.data : [];
-    return inquiries
-      .map(normalizeInquiry)
-      .sort((first, second) => (second.createdAt?.getTime?.() || 0) - (first.createdAt?.getTime?.() || 0));
+    return inquiries.map(normalizeInquiry);
   } catch (error) {
     throw buildApiError(error, 'Unable to load inquiries right now.');
   }
 }
 
-export async function updateAdminInquiry(token, inquiryId, values) {
+export async function fetchAdminInquiryById(token, inquiryId) {
   try {
-    const response = await apiClient.put(
-      `/inquiries/${inquiryId}`,
-      values,
+    const response = await apiClient.get(`/admin/inquiries/${inquiryId}`, createAuthConfig(token));
+    return normalizeInquiry(response.data);
+  } catch (error) {
+    throw buildApiError(error, 'Unable to load this inquiry right now.');
+  }
+}
+
+export async function replyToAdminInquiry(token, inquiryId, message) {
+  try {
+    const response = await apiClient.post(
+      `/admin/inquiries/${inquiryId}/reply`,
+      { message },
       createAuthConfig(token)
     );
+    return {
+      ...response.data,
+      inquiry: response.data?.inquiry ? normalizeInquiry(response.data.inquiry) : null,
+    };
+  } catch (error) {
+    throw buildApiError(error, 'Unable to send this reply right now.');
+  }
+}
 
-    return response.data;
+export async function updateAdminInquiryStatus(token, inquiryId, status) {
+  try {
+    const response = await apiClient.patch(
+      `/admin/inquiries/${inquiryId}/status`,
+      { status },
+      createAuthConfig(token)
+    );
+    return {
+      ...response.data,
+      inquiry: response.data?.inquiry ? normalizeInquiry(response.data.inquiry) : null,
+    };
+  } catch (error) {
+    throw buildApiError(error, 'Unable to update this inquiry status right now.');
+  }
+}
+
+export async function markInquiryReadByAdmin(token, inquiryId) {
+  try {
+    const response = await apiClient.patch(
+      `/admin/inquiries/${inquiryId}/read-admin`,
+      {},
+      createAuthConfig(token)
+    );
+    return {
+      ...response.data,
+      inquiry: response.data?.inquiry ? normalizeInquiry(response.data.inquiry) : null,
+    };
   } catch (error) {
     throw buildApiError(error, 'Unable to update this inquiry right now.');
   }
+}
+
+export async function updateAdminInquiry(token, inquiryId, values) {
+  if (typeof values?.isResolved === 'boolean') {
+    return updateAdminInquiryStatus(token, inquiryId, values.isResolved ? 'closed' : 'open');
+  }
+
+  if (typeof values?.response === 'string' && values.response.trim()) {
+    return replyToAdminInquiry(token, inquiryId, values.response);
+  }
+
+  throw new Error('Nothing to update for this inquiry.');
 }

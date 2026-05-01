@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
@@ -41,6 +42,7 @@ function buildDefaultName(user) {
 }
 
 export default function ContactUsScreen() {
+  const router = useRouter();
   const { isAuthenticated, token, user } = useAuth();
   const [form, setForm] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
@@ -185,6 +187,12 @@ export default function ContactUsScreen() {
         email: user?.email || '',
         phone: user?.phone || '',
       });
+
+      if (isAuthenticated && response?.inquiry?.id) {
+        setTimeout(() => {
+          router.push(`/inquiries/${response.inquiry.id}`);
+        }, 400);
+      }
 
     } catch (error) {
       const nextMessage = error instanceof Error ? error.message : 'Unable to send your message.';
@@ -352,6 +360,14 @@ export default function ContactUsScreen() {
             onPress={() => void handleSubmit()}
             disabled={isSubmitting}
           />
+
+          {isAuthenticated ? (
+            <AppButton
+              title="View My Inquiries"
+              variant="secondary"
+              onPress={() => router.push('/inquiries')}
+            />
+          ) : null}
         </AppCard>
       </ScrollView>
     </SafeAreaView>

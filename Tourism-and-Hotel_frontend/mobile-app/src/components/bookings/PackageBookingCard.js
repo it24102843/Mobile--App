@@ -49,6 +49,12 @@ function getStatusMeta(status) {
   }
 }
 
+function isMealAddOn(item) {
+  const title = `${item?.name || item?.title || ''}`.trim().toLowerCase();
+  const category = `${item?.category || ''}`.trim().toLowerCase();
+  return title === 'meal package' || title === 'meal' || category === 'meal';
+}
+
 function InfoRow({ icon, label, value }) {
   return (
     <View style={styles.infoRow}>
@@ -66,7 +72,10 @@ export function PackageBookingCard({ booking, onCancel, onDetails }) {
   const canCancel = Boolean(booking.canCancel);
   const refundStatusMeta = getRefundStatusMeta(booking.refundStatus);
   const regularAddOnLabel = booking.addOns?.length
-    ? booking.addOns.map((item) => item?.name || item?.title || 'Extra').join(', ')
+    ? booking.addOns
+        .filter((item) => !isMealAddOn(item))
+        .map((item) => item?.name || item?.title || 'Extra')
+        .join(', ')
     : '';
 
   return (
@@ -103,7 +112,12 @@ export function PackageBookingCard({ booking, onCancel, onDetails }) {
         />
       ) : null}
       {regularAddOnLabel ? <InfoRow icon="gift-outline" label="Add-ons" value={regularAddOnLabel} /> : null}
-      <MealPackageSummary mealPackage={booking.mealPackage} />
+      <MealPackageSummary
+        mealPackage={booking.mealPackage}
+        breakfastSelected={Boolean(booking.mealPackage?.breakfast)}
+        lunchSelected={Boolean(booking.mealPackage?.lunch)}
+        price={booking.mealPackage?.price}
+      />
       {Number(booking.addOnTotal || 0) > 0 ? (
         <InfoRow
           icon="plus-circle-outline"

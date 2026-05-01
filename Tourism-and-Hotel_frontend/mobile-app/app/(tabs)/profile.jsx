@@ -49,6 +49,7 @@ export default function ProfileScreen() {
           <ProfileRow label="Email" value={user?.email ?? 'Not available'} />
           <ProfileRow label="Phone" value={user?.phone ?? 'Not available'} />
           <ProfileRow label="Role" value={user?.role ?? 'customer'} />
+          <AppButton title="My Inquiries" variant="secondary" onPress={() => router.push('/inquiries')} />
         </AppCard>
         ) : null}
 

@@ -43,7 +43,8 @@ function AppShell() {
   const isProfileActive =
     pathname === '/profile' ||
     pathname === '/my-bookings' ||
-    pathname.startsWith('/bookings');
+    pathname.startsWith('/bookings') ||
+    pathname.startsWith('/inquiries');
   const isHomeActive = !isProfileActive && shouldShowTabBar;
   const bottomInset = Math.max(insets.bottom, 8);
 

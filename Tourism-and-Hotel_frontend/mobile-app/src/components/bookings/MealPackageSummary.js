@@ -23,10 +23,19 @@ function MealRow({ icon, label, amount, emphasized = false }) {
   );
 }
 
-export function MealPackageSummary({ mealPackage }) {
-  const breakfastSelected = Boolean(mealPackage?.breakfast);
-  const lunchSelected = Boolean(mealPackage?.lunch);
-  const totalPrice = Number(mealPackage?.price || 0);
+export function MealPackageSummary({
+  mealPackage,
+  breakfastSelected: breakfastSelectedProp,
+  lunchSelected: lunchSelectedProp,
+  price,
+}) {
+  const breakfastSelected =
+    typeof breakfastSelectedProp === 'boolean'
+      ? breakfastSelectedProp
+      : Boolean(mealPackage?.breakfast);
+  const lunchSelected =
+    typeof lunchSelectedProp === 'boolean' ? lunchSelectedProp : Boolean(mealPackage?.lunch);
+  const totalPrice = Number(price ?? mealPackage?.price ?? 0);
 
   if (!breakfastSelected && !lunchSelected) {
     return null;
