@@ -1,0 +1,14 @@
+{
+  "include": [
+    "app",
+    "src",
+    "components",
+    "constants",
+    "hooks",
+    "scripts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".expo"
+  ]
+}

@@ -1,0 +1,59 @@
+# Workspace
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.temp
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Node / JavaScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Expo / React Native
+.expo/
+dist/
+web-build/
+.metro-health-check*
+expo-env.d.ts
+
+# Native build folders
+android/
+ios/
+.kotlin/
+
+# TypeScript / build caches
+*.tsbuildinfo
+coverage/
+.nyc_output/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS / secrets / certificates
+*.pem
+*.p8
+*.p12
+*.jks
+*.key
+*.mobileprovision
+
+# Project-specific temporary folders
+_tmp_package_ui/
+_tmp_vehicle_ui/
+docx/
+
+# Frontend / backend nested dependency folders
+Tourism-and-Hotel_frontend/**/node_modules/
+Tourism-and-Hotel_Manage/**/node_modules/
+

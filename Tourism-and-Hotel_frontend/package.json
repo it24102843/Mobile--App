@@ -1,0 +1,13 @@
+{
+  "name": "tourism-and-hotel-frontend",
+  "private": true,
+  "scripts": {
+    "start": "npm --prefix mobile-app start",
+    "start:lan": "npm --prefix mobile-app run start:lan",
+    "start:tunnel": "npm --prefix mobile-app run start:tunnel",
+    "android": "npm --prefix mobile-app run android",
+    "ios": "npm --prefix mobile-app run ios",
+    "web": "npm --prefix mobile-app run web",
+    "lint": "npm --prefix mobile-app run lint"
+  }
+}

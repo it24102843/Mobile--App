@@ -1,0 +1,38 @@
+export const homeHeroSlides = [
+  {
+    id: 'hero-elephant-safari',
+    imageSource: require('../../assets/images/elephant-safari-lake.jpg.png'),
+    title: 'Discover Wild Sri Lanka',
+    subtitle: 'Experience breathtaking safari moments and natural beauty.',
+    eyebrow: 'Safari Escape',
+    ctaLabel: 'View Vehicles',
+    route: '/vehicles',
+  },
+  {
+    id: 'hero-hiking-travelers',
+    imageSource: require('../../assets/images/hiking-travelers.jpg.png'),
+    title: 'Adventure Awaits',
+    subtitle: 'Explore scenic trails, culture, and unforgettable journeys.',
+    eyebrow: 'Adventure Travel',
+    ctaLabel: 'View Packages',
+    route: '/packages',
+  },
+  {
+    id: 'hero-luxury-room',
+    imageSource: require('../../assets/images/luxury-room-resort.jpg.png'),
+    title: 'Luxury Stays',
+    subtitle: 'Relax in premium rooms designed for comfort and elegance.',
+    eyebrow: 'Resort Stays',
+    ctaLabel: 'View Rooms',
+    route: '/rooms',
+  },
+  {
+    id: 'hero-sigiriya-viewpoint',
+    imageSource: require('../../assets/images/sigiriya-rock-viewpoint.jpg.png'),
+    title: 'Explore Iconic Places',
+    subtitle: 'Visit famous Sri Lankan landmarks and nearby attractions.',
+    eyebrow: 'Scenic Discovery',
+    ctaLabel: 'Explore Hotels',
+    route: '/hotels',
+  },
+];
