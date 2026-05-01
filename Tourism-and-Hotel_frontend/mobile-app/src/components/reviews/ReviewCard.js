@@ -30,6 +30,27 @@ function StatusChip({ label, tone = 'neutral' }) {
   );
 }
 
+function AdminReplyPreview({ adminReply, unreadReply }) {
+  if (!adminReply?.message) {
+    return null;
+  }
+
+  return (
+    <View style={styles.replyCard}>
+      <View style={styles.replyHeaderRow}>
+        <Text style={styles.replyTitle}>Admin Reply</Text>
+        {unreadReply ? (
+          <View style={styles.newReplyBadge}>
+            <Text style={styles.newReplyBadgeText}>New reply</Text>
+          </View>
+        ) : null}
+      </View>
+      <Text style={styles.replyMessage}>{adminReply.message}</Text>
+      {adminReply.repliedAtLabel ? <Text style={styles.replyDate}>{adminReply.repliedAtLabel}</Text> : null}
+    </View>
+  );
+}
+
 export function ReviewCard({
   review,
   compact = false,
@@ -70,6 +91,8 @@ export function ReviewCard({
         </View>
 
         <Text style={styles.comment}>{review.comment}</Text>
+
+        <AdminReplyPreview adminReply={review.adminReply} unreadReply={review.unreadReply} />
 
         <View style={styles.metaRow}>
           <StatusChip label={review.section || 'All'} tone="section" />
@@ -156,6 +179,46 @@ const styles = StyleSheet.create({
   comment: {
     color: theme.colors.text,
     ...theme.typography.body,
+  },
+  replyCard: {
+    gap: theme.spacing.xs,
+    padding: theme.spacing.md,
+    borderRadius: theme.radii.lg,
+    backgroundColor: theme.colors.accentSoft,
+    borderWidth: 1,
+    borderColor: '#F4D4A5',
+  },
+  replyHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  replyTitle: {
+    color: theme.colors.accentPressed,
+    ...theme.typography.label,
+    fontWeight: '800',
+  },
+  newReplyBadge: {
+    borderRadius: theme.radii.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: theme.colors.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.colors.primaryMuted,
+  },
+  newReplyBadgeText: {
+    color: theme.colors.primary,
+    ...theme.typography.bodySmall,
+    fontWeight: '700',
+  },
+  replyMessage: {
+    color: theme.colors.text,
+    ...theme.typography.body,
+  },
+  replyDate: {
+    color: theme.colors.textMuted,
+    ...theme.typography.bodySmall,
   },
   metaRow: {
     flexDirection: 'row',

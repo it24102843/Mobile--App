@@ -7,12 +7,14 @@ import { AppTextField } from '../../components/AppTextField';
 import { AdminScreenWrapper } from '../../components/admin/AdminScreenWrapper';
 import { ReviewAdminCard } from '../../components/admin/ReviewAdminCard';
 import { ReviewFilters } from '../../components/admin/ReviewFilters';
+import { ReviewReplyModal } from '../../components/admin/ReviewReplyModal';
 import { useAuth } from '../../context/AuthContext';
 import {
   approveAdminReview,
   deleteAdminReview,
   fetchAdminReviews,
   rejectAdminReview,
+  replyToAdminReview,
   REVIEW_RATING_OPTIONS,
   REVIEW_STATUS_OPTIONS,
 } from '../../services/adminReviewsApi';
@@ -34,6 +36,11 @@ export default function AdminReviewsScreen() {
   const [approvingReviewId, setApprovingReviewId] = useState(null);
   const [rejectingReviewId, setRejectingReviewId] = useState(null);
   const [deletingReviewId, setDeletingReviewId] = useState(null);
+  const [replyingReviewId, setReplyingReviewId] = useState(null);
+  const [replyModalVisible, setReplyModalVisible] = useState(false);
+  const [selectedReview, setSelectedReview] = useState(null);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [replyError, setReplyError] = useState('');
 
   useEffect(() => {
     void loadReviews();
@@ -167,6 +174,55 @@ export default function AdminReviewsScreen() {
     ]);
   }
 
+  function openReplyModal(review) {
+    setSelectedReview(review);
+    setReplyMessage(review.adminReply?.message || '');
+    setReplyError('');
+    setReplyModalVisible(true);
+  }
+
+  function closeReplyModal() {
+    setReplyModalVisible(false);
+    setSelectedReview(null);
+    setReplyMessage('');
+    setReplyError('');
+  }
+
+  async function handleSendReply() {
+    if (!selectedReview) {
+      return;
+    }
+
+    const message = `${replyMessage || ''}`.trim();
+
+    if (!message) {
+      setReplyError('Reply message is required.');
+      return;
+    }
+
+    if (message.length < 5) {
+      setReplyError('Reply message must contain at least 5 characters.');
+      return;
+    }
+
+    try {
+      setReplyError('');
+      setReplyingReviewId(selectedReview.id);
+      const response = await replyToAdminReview(token, selectedReview.id, message);
+      Alert.alert('Reply sent', response?.message || 'Your reply was saved successfully.');
+      closeReplyModal();
+      await loadReviews(true);
+    } catch (replyLoadError) {
+      setReplyError(
+        replyLoadError instanceof Error
+          ? replyLoadError.message
+          : 'Unable to send this reply right now.'
+      );
+    } finally {
+      setReplyingReviewId(null);
+    }
+  }
+
   function renderContent() {
     if (loading) {
       return (
@@ -204,9 +260,11 @@ export default function AdminReviewsScreen() {
         approving={approvingReviewId === review.id}
         rejecting={rejectingReviewId === review.id}
         deleting={deletingReviewId === review.id}
+        replying={replyingReviewId === review.id}
         onApprove={() => confirmApprove(review)}
         onReject={() => confirmReject(review)}
         onDelete={() => confirmDelete(review)}
+        onReply={() => openReplyModal(review)}
       />
     ));
   }
@@ -245,6 +303,22 @@ export default function AdminReviewsScreen() {
       </AppCard>
 
       <View style={styles.listWrap}>{renderContent()}</View>
+
+      <ReviewReplyModal
+        visible={replyModalVisible}
+        review={selectedReview}
+        value={replyMessage}
+        onChangeText={(text) => {
+          setReplyMessage(text);
+          if (replyError) {
+            setReplyError('');
+          }
+        }}
+        onClose={closeReplyModal}
+        onSubmit={() => void handleSendReply()}
+        loading={Boolean(replyingReviewId)}
+        error={replyError}
+      />
     </AdminScreenWrapper>
   );
 }

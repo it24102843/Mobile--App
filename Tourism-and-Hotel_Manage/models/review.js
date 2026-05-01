@@ -1,5 +1,29 @@
 import mongoose from 'mongoose';
 
+const adminReplySchema = new mongoose.Schema(
+    {
+        message: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        repliedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+        },
+        repliedAt: {
+            type: Date,
+            default: Date.now,
+        },
+        readByUser: {
+            type: Boolean,
+            default: false,
+        },
+    },
+    { _id: false }
+);
+
 const reviewSchema=new mongoose.Schema({
     email : {
         type : String,
@@ -44,6 +68,10 @@ const reviewSchema=new mongoose.Schema({
         type: String,
         required: true,
         default: 'All'
+    },
+    adminReply: {
+        type: adminReplySchema,
+        default: null,
     }
 
 })

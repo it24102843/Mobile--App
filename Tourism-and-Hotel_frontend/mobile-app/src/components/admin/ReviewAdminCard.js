@@ -20,9 +20,11 @@ export function ReviewAdminCard({
   approving = false,
   rejecting = false,
   deleting = false,
+  replying = false,
   onApprove,
   onReject,
   onDelete,
+  onReply,
 }) {
   return (
     <AppCard style={styles.card}>
@@ -47,7 +49,25 @@ export function ReviewAdminCard({
       <InfoRow label="Related Service" value={review.section} />
       <InfoRow label="Created" value={review.dateLabel} />
 
+      {review.adminReply?.message ? (
+        <View style={styles.replyCard}>
+          <Text style={styles.replyEyebrow}>Replied</Text>
+          <Text style={styles.replyMessage}>{review.adminReply.message}</Text>
+          {review.adminReply.repliedAtLabel ? (
+            <Text style={styles.replyDate}>{review.adminReply.repliedAtLabel}</Text>
+          ) : null}
+        </View>
+      ) : null}
+
       <View style={styles.actionRow}>
+        <View style={styles.flexButton}>
+          <AppButton
+            title={replying ? 'Opening...' : review.adminReply?.message ? 'Edit Reply' : 'Reply'}
+            variant="secondary"
+            onPress={onReply}
+            disabled={replying}
+          />
+        </View>
         <View style={styles.flexButton}>
           <AppButton
             title={approving ? 'Approving...' : 'Approve'}
@@ -124,6 +144,27 @@ const styles = StyleSheet.create({
   comment: {
     color: theme.colors.text,
     ...theme.typography.body,
+  },
+  replyCard: {
+    gap: theme.spacing.xs,
+    borderRadius: theme.radii.lg,
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.accentSoft,
+    borderWidth: 1,
+    borderColor: '#F4D4A5',
+  },
+  replyEyebrow: {
+    color: theme.colors.accentPressed,
+    ...theme.typography.eyebrow,
+    letterSpacing: 1.3,
+  },
+  replyMessage: {
+    color: theme.colors.text,
+    ...theme.typography.body,
+  },
+  replyDate: {
+    color: theme.colors.textMuted,
+    ...theme.typography.bodySmall,
   },
   infoRow: {
     flexDirection: 'row',

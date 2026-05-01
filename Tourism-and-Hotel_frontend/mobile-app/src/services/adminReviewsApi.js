@@ -53,6 +53,22 @@ function formatReviewDate(value) {
   }).format(date);
 }
 
+function formatReviewDateTime(value) {
+  const date = value ? new Date(value) : null;
+
+  if (!date || Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date);
+}
+
 function sortReviewsByRatingAndDate(left, right) {
   const leftRating = Number(left?.rating || 0);
   const rightRating = Number(right?.rating || 0);
@@ -69,6 +85,7 @@ function sortReviewsByRatingAndDate(left, right) {
 
 export function normalizeAdminReview(rawReview) {
   const rating = Math.max(0, Math.min(5, Number(rawReview?.rating || 0)));
+  const adminReplyMessage = rawReview?.adminReply?.message || '';
 
   return {
     ...rawReview,
@@ -84,6 +101,15 @@ export function normalizeAdminReview(rawReview) {
     statusLabel: rawReview?.isApproved ? 'Approved' : 'Pending',
     statusVariant: rawReview?.isApproved ? 'primary' : 'warning',
     isApproved: Boolean(rawReview?.isApproved),
+    adminReply: adminReplyMessage
+      ? {
+          message: adminReplyMessage,
+          repliedBy: rawReview?.adminReply?.repliedBy || null,
+          repliedAt: rawReview?.adminReply?.repliedAt || null,
+          repliedAtLabel: formatReviewDateTime(rawReview?.adminReply?.repliedAt),
+          readByUser: Boolean(rawReview?.adminReply?.readByUser),
+        }
+      : null,
   };
 }
 
@@ -120,5 +146,21 @@ export async function deleteAdminReview(token, reviewId) {
     return response.data;
   } catch (error) {
     throw buildApiError(error, 'Unable to delete this review right now.');
+  }
+}
+
+export async function replyToAdminReview(token, reviewId, message) {
+  try {
+    const response = await apiClient.post(
+      `/reviews/${reviewId}/reply`,
+      { message },
+      createAuthConfig(token)
+    );
+    return {
+      ...response.data,
+      review: response.data?.review ? normalizeAdminReview(response.data.review) : null,
+    };
+  } catch (error) {
+    throw buildApiError(error, 'Unable to send this reply right now.');
   }
 }

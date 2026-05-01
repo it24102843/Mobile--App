@@ -10,7 +10,7 @@ import { HomeSectionState } from '../../components/home/HomeSectionState';
 import { ReviewCard } from '../../components/reviews/ReviewCard';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { useAuth, useRequireAuth } from '../../hooks/useAuth';
-import { fetchMyReviews, fetchPublicReviews } from '../../services/reviewsApi';
+import { fetchMyReviews, fetchPublicReviews, fetchUnreadReviewReplyCount } from '../../services/reviewsApi';
 import { theme } from '../../theme';
 
 export default function ReviewsScreen() {
@@ -22,6 +22,7 @@ export default function ReviewsScreen() {
     error: null,
     reviews: [],
     myReviews: [],
+    unreadReplyCount: 0,
   });
 
   const loadReviews = useCallback(async () => {
@@ -32,9 +33,10 @@ export default function ReviewsScreen() {
     }));
 
     try {
-      const [reviews, myReviews] = await Promise.all([
+      const [reviews, myReviews, unreadReplyCount] = await Promise.all([
         fetchPublicReviews(),
         isAuthenticated && token ? fetchMyReviews(token) : Promise.resolve([]),
+        isAuthenticated && token ? fetchUnreadReviewReplyCount(token) : Promise.resolve(0),
       ]);
 
       setState({
@@ -42,6 +44,7 @@ export default function ReviewsScreen() {
         error: null,
         reviews,
         myReviews,
+        unreadReplyCount,
       });
     } catch (error) {
       setState({
@@ -49,6 +52,7 @@ export default function ReviewsScreen() {
         error,
         reviews: [],
         myReviews: [],
+        unreadReplyCount: 0,
       });
     }
   }, [isAuthenticated, token]);
@@ -95,9 +99,20 @@ export default function ReviewsScreen() {
 
         {isAuthenticated && state.myReviews.length ? (
           <View style={styles.sectionWrap}>
-            <Text style={styles.sectionTitle}>Your Reviews</Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Your Reviews</Text>
+              {state.unreadReplyCount > 0 ? (
+                <View style={styles.unreadBadge}>
+                  <Text style={styles.unreadBadgeText}>{state.unreadReplyCount} new repl{state.unreadReplyCount > 1 ? 'ies' : 'y'}</Text>
+                </View>
+              ) : null}
+            </View>
             {state.myReviews.map((review) => (
-              <ReviewCard key={review.id} review={review} />
+              <ReviewCard
+                key={review.id}
+                review={review}
+                onPress={() => router.push(`/reviews/${review.id}`)}
+              />
             ))}
           </View>
         ) : null}
@@ -169,9 +184,28 @@ const styles = StyleSheet.create({
   sectionWrap: {
     gap: theme.spacing.lg,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
   sectionTitle: {
     color: theme.colors.text,
     ...theme.typography.sectionTitle,
+  },
+  unreadBadge: {
+    borderRadius: theme.radii.pill,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.colors.primaryMuted,
+  },
+  unreadBadgeText: {
+    color: theme.colors.primary,
+    ...theme.typography.bodySmall,
+    fontWeight: '700',
   },
   errorText: {
     color: theme.colors.errorText,

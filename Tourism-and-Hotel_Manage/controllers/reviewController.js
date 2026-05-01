@@ -7,6 +7,10 @@ import {
 
 const REVIEW_SORT = { rating: -1, date: -1 };
 
+function normalizeReplyMessage(value) {
+  return String(value ?? "").trim();
+}
+
 // ADD REVIEW (rating optional)
 export async function addReview(req, res) {
   if (!req.user) return res.status(401).json({ message: "Please login" });
@@ -81,6 +85,23 @@ export async function getUserReviews(req, res) {
   }
 }
 
+export async function getUnreadReviewReplyCount(req, res) {
+  if (!req.user) return res.status(401).json({ message: "Please login" });
+
+  try {
+    const unreadCount = await Review.countDocuments({
+      email: req.user.email,
+      "adminReply.readByUser": false,
+      "adminReply.message": { $exists: true, $ne: "" },
+    });
+
+    res.json({ unreadCount });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to load unread review replies" });
+  }
+}
+
 // GET ONE REVIEW
 export async function getReviewById(req, res) {
   const { id } = req.params;
@@ -104,6 +125,34 @@ export async function getReviewById(req, res) {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to get review" });
+  }
+}
+
+export async function markReviewReplyRead(req, res) {
+  const { id } = req.params;
+
+  if (!req.user) return res.status(401).json({ message: "Please login" });
+
+  try {
+    const review = await Review.findById(id);
+
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+
+    if (review.email !== req.user.email && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    if (review.adminReply?.message && !review.adminReply.readByUser) {
+      review.adminReply.readByUser = true;
+      await review.save();
+    }
+
+    res.json({ message: "Review reply marked as read", review });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to update review reply" });
   }
 }
 
@@ -212,5 +261,47 @@ export async function rejectReviewById(req, res) {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Rejection failed" });
+  }
+}
+
+export async function replyToReviewById(req, res) {
+  const { id } = req.params;
+  const message = normalizeReplyMessage(req.body?.message);
+
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ message: "Admin only" });
+  }
+
+  if (!message) {
+    return res.status(400).json({ message: "Reply message is required" });
+  }
+
+  if (message.length < 5) {
+    return res.status(400).json({ message: "Reply message must contain at least 5 characters" });
+  }
+
+  try {
+    const review = await Review.findById(id);
+
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+
+    review.adminReply = {
+      message,
+      repliedBy: req.user._id,
+      repliedAt: new Date(),
+      readByUser: false,
+    };
+
+    await review.save();
+
+    res.json({
+      message: "Reply sent successfully",
+      review,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Reply failed" });
   }
 }

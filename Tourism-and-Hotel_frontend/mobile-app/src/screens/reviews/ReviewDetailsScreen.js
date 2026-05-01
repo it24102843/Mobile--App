@@ -10,7 +10,8 @@ import { HomeSectionState } from '../../components/home/HomeSectionState';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { theme } from '../../theme';
 import { getDefaultImage } from '../../utils/media';
-import { fetchReviewById } from '../../services/reviewsApi';
+import { fetchReviewById, markReviewReplyRead } from '../../services/reviewsApi';
+import { useAuth } from '../../hooks/useAuth';
 
 function MetaChip({ label, approved }) {
   return (
@@ -25,6 +26,7 @@ function MetaChip({ label, approved }) {
 export default function ReviewDetailsScreen() {
   const params = useLocalSearchParams();
   const reviewId = typeof params.reviewId === 'string' ? params.reviewId : '';
+  const { token, isAuthenticated } = useAuth();
   const [state, setState] = useState({
     loading: true,
     error: null,
@@ -36,7 +38,18 @@ export default function ReviewDetailsScreen() {
 
     async function loadReview() {
       try {
-        const review = await fetchReviewById(reviewId);
+        const review = await fetchReviewById(reviewId, token);
+
+        if (
+          isAuthenticated &&
+          token &&
+          review?.adminReply?.message &&
+          review.unreadReply
+        ) {
+          await markReviewReplyRead(token, reviewId);
+          review.adminReply.readByUser = true;
+          review.unreadReply = false;
+        }
 
         if (mounted) {
           setState({
@@ -61,7 +74,7 @@ export default function ReviewDetailsScreen() {
     return () => {
       mounted = false;
     };
-  }, [reviewId]);
+  }, [isAuthenticated, reviewId, token]);
 
   if (state.loading) {
     return (
@@ -127,6 +140,23 @@ export default function ReviewDetailsScreen() {
           <Text style={styles.bodyTitle}>Review Comment</Text>
           <Text style={styles.bodyText}>{review.comment || 'No review comment was provided.'}</Text>
         </AppCard>
+
+        {review.adminReply?.message ? (
+          <AppCard style={styles.replyCard}>
+            <View style={styles.replyHeaderRow}>
+              <Text style={styles.replyTitle}>Admin Reply</Text>
+              {review.unreadReply ? (
+                <View style={styles.replyBadge}>
+                  <Text style={styles.replyBadgeText}>New reply</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={styles.replyMessage}>{review.adminReply.message}</Text>
+            {review.adminReply.repliedAtLabel ? (
+              <Text style={styles.replyDate}>{review.adminReply.repliedAtLabel}</Text>
+            ) : null}
+          </AppCard>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -217,6 +247,42 @@ const styles = StyleSheet.create({
     gap: theme.spacing.md,
     backgroundColor: '#FFFEFB',
     borderColor: '#F0E3C8',
+  },
+  replyCard: {
+    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.accentSoft,
+    borderColor: '#F4D4A5',
+  },
+  replyHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  replyTitle: {
+    color: theme.colors.accentPressed,
+    ...theme.typography.sectionTitle,
+  },
+  replyBadge: {
+    borderRadius: theme.radii.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: theme.colors.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.colors.primaryMuted,
+  },
+  replyBadgeText: {
+    color: theme.colors.primary,
+    ...theme.typography.bodySmall,
+    fontWeight: '700',
+  },
+  replyMessage: {
+    color: theme.colors.text,
+    ...theme.typography.body,
+  },
+  replyDate: {
+    color: theme.colors.textMuted,
+    ...theme.typography.bodySmall,
   },
   bodyTitle: {
     color: theme.colors.text,

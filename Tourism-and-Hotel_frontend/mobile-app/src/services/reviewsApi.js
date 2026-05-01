@@ -1,7 +1,7 @@
 import { isAxiosError } from 'axios';
 
 import { apiClient } from '../api/client';
-import { createAuthConfig } from '../utils/api';
+import { createAuthConfig, createOptionalAuthConfig } from '../utils/api';
 import { resolveMediaUrl } from '../utils/media';
 import { hasMinLength, isNumberInRange, normalizeInput } from '../utils/validation';
 
@@ -41,6 +41,22 @@ function formatReviewDate(value) {
   }).format(date);
 }
 
+function formatReviewDateTime(value) {
+  const date = value ? new Date(value) : null;
+
+  if (!date || Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date);
+}
+
 function sortReviewsByRatingAndDate(left, right) {
   const leftRating = Number(left?.rating || 0);
   const rightRating = Number(right?.rating || 0);
@@ -58,6 +74,7 @@ function sortReviewsByRatingAndDate(left, right) {
 export function normalizeReview(rawReview) {
   const rating = Math.max(0, Math.min(Number(rawReview?.rating || 0), 5));
   const isApproved = Boolean(rawReview?.isApproved);
+  const adminReplyMessage = rawReview?.adminReply?.message || '';
 
   return {
     id: rawReview?._id,
@@ -73,6 +90,16 @@ export function normalizeReview(rawReview) {
     isApproved,
     statusLabel: isApproved ? 'Approved' : 'Pending Approval',
     statusVariant: isApproved ? 'primary' : 'warning',
+    adminReply: adminReplyMessage
+      ? {
+          message: adminReplyMessage,
+          repliedBy: rawReview?.adminReply?.repliedBy || null,
+          repliedAt: rawReview?.adminReply?.repliedAt || null,
+          repliedAtLabel: formatReviewDateTime(rawReview?.adminReply?.repliedAt),
+          readByUser: Boolean(rawReview?.adminReply?.readByUser),
+        }
+      : null,
+    unreadReply: Boolean(adminReplyMessage && rawReview?.adminReply?.readByUser === false),
     raw: rawReview,
   };
 }
@@ -117,12 +144,34 @@ export async function fetchMyReviews(token) {
   }
 }
 
-export async function fetchReviewById(reviewId) {
+export async function fetchReviewById(reviewId, token) {
   try {
-    const response = await apiClient.get(`/reviews/${reviewId}`);
+    const response = await apiClient.get(`/reviews/${reviewId}`, createOptionalAuthConfig(token));
     return normalizeReview(response.data);
   } catch (error) {
     throw buildApiError(error, 'Unable to load this review right now.');
+  }
+}
+
+export async function fetchUnreadReviewReplyCount(token) {
+  try {
+    const response = await apiClient.get('/reviews/my/replies/unread-count', createAuthConfig(token));
+    return Number(response.data?.unreadCount || 0);
+  } catch (error) {
+    throw buildApiError(error, 'Unable to load unread review replies right now.');
+  }
+}
+
+export async function markReviewReplyRead(token, reviewId) {
+  try {
+    const response = await apiClient.patch(
+      `/reviews/${reviewId}/reply/read`,
+      {},
+      createAuthConfig(token)
+    );
+    return response.data;
+  } catch (error) {
+    throw buildApiError(error, 'Unable to update this review reply right now.');
   }
 }
 
